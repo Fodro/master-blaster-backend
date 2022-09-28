@@ -33,6 +33,11 @@ def serve_users(credentials: User.LoginModel) -> Token:
     return {"access_token": access_token, "token_type": "bearer"}
 
 
-@router.get('/me', response_model=User.Model)
+@router.get('/me', response_model=User.ReturnModel)
 def serve_me(current_user=Depends(auth.get_current_user)):
     return current_user
+
+
+@router.post('/new', response_model=Token.Model)
+def serve_signup(user: User.SignUpModel):
+    return auth.create_new_user(user)
