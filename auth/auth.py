@@ -7,9 +7,10 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from datetime import timedelta, datetime
 from models import TokenData, User, Token
 from db.users import UsersDB
+import os
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-SECRET_KEY = "changemeintoenvvar"  # TODO change this to env after dev
+SECRET_KEY = os.environ.get('SECRET_KEY')
 ALGORITHM = "HS256"
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
@@ -33,11 +34,11 @@ async def authentication(username: int, password: str) -> User.Model:
     return user
 
 
-# DO NOT USE DEFAULT VALUE
 async def create_access_token(data: dict, expires_delta: timedelta = timedelta(minutes=3)) -> str:
     data_to_encode = data.copy()
     expire = datetime.utcnow() + expires_delta
     data_to_encode.update({"expires": expire.strftime("%Y-%m-%d %H:%M:%S")})
+    print(data_to_encode)
     encoded_jwt = jwt.encode(data_to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
@@ -48,9 +49,17 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> User.Model:
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
+    token_exception = HTTPException(
+        status_code=401,
+        detail="Token expired",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
     try:
         data = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id: int = int(data.get("sub"))
+        expiration_time: datetime = datetime.strptime(data.get("expires"))
+        if expiration_time >= datetime.utcnow():
+            raise token_exception
         if user_id is None:
             raise credentials_exception
         token_data = TokenData.Model(user_id=user_id)
@@ -67,6 +76,6 @@ async def create_new_user(user: User.SignUpModel) -> Token.Model:
     new_user = await users_db.create_new_user(User.Model(id=1, username=user.username,
                                                          email=user.email, hashed_password=hashed_password))
     access_token = await create_access_token(
-        data={"sub": str(new_user.id)},  # expires_delta=access_token_expires
+        data={"sub": str(new_user.id)}, expires_delta=timedelta(days=30)
     )
     return {"access_token": access_token, "token_type": "bearer"}

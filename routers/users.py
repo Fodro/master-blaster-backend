@@ -1,14 +1,15 @@
 from fastapi import APIRouter, HTTPException, Depends
-from fastapi.security import OAuth2PasswordRequestForm
 from auth import auth
 from models import User, Token
-
+from datetime import datetime, timedelta
+import os
 
 router = APIRouter(
     prefix='/users',
     tags=['users'],
     responses={
         404: {"description": "Not Found"},
+        401: {"description": "Not authenticated"},
         400: {"description": "Bad Request"},
         403: {"description": "Forbidden"}
     }
@@ -26,9 +27,8 @@ async def serve_users(credentials: User.LoginModel) -> Token:
             detail="Wrong credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    # access_token_expires = timedelta(os.environ["ACCESS_TOKEN_EXPIRATION_TIME"])
     access_token = await auth.create_access_token(
-        data={"sub": str(user.id)},  # expires_delta=access_token_expires
+        data={"sub": str(user.id)},  expires_delta=timedelta(minutes=1)
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
