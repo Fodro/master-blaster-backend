@@ -2,12 +2,15 @@ from sqlalchemy import Column, Integer, String, ForeignKey, DateTime
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.orm import declarative_base, relationship
 import os
-import asyncio
+from dotenv import load_dotenv
+load_dotenv()
+
 
 Base = declarative_base()
 
-DB_LINK = str(os.environ['DB_LINK'])
-
+DB_LINK = "postgresql+asyncpg://" + os.environ['POSTGRES_USER'] + ":" + os.environ['POSTGRES_PASSWORD'] + \
+    "@" + os.environ['POSTGRES_HOST'] + ":" + \
+    os.environ['POSTGRES_PORT'] + "/" + os.environ['POSTGRES_DB']
 engine = create_async_engine(DB_LINK)
 
 
