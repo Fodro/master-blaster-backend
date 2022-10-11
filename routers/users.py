@@ -28,7 +28,7 @@ async def serve_users(credentials: User.LoginModel) -> Token:
             headers={"WWW-Authenticate": "Bearer"},
         )
     access_token = await auth.create_access_token(
-        data={"sub": str(user.id)},  expires_delta=timedelta(minutes=1)
+        data={"sub": user.username},  expires_delta=timedelta(days=30)
     )
     return {"access_token": access_token, "token_type": "bearer"}
 

@@ -4,4 +4,4 @@ from typing import Optional
 
 
 class Model(BaseModel):
-    user_id: Optional[int]
+    username: Optional[str]
